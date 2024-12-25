@@ -144,6 +144,16 @@ def get_news(ticker_list):
             else:
                 print("Skipping article due to missing 'title'")
             counter += 1
+
+def screener_1():
+    stocks = get_T500()
+    get_stocks_biggest_losers(stocks)
+    get_news(stocks)
+
+def screener_2():
+    stocks = get_T500()
+    upcoming_earnings(stocks)
+
 # Main
 
 def main():
@@ -152,16 +162,60 @@ def main():
     # upcoming_earnings(stcoks)
     # get_stock_quote('AAPL')
     # get_options('AAPL')
-    #run get 500 stocks function market open every day
-    while True:
-        if datetime.now().hour == 9 and datetime.now().minute == 30:
-            get_stocks_biggest_losers(stocks)
-            time.sleep(60)
-        else:
-            print("Waiting for market open...")
-            time.sleep(1)
+    # from datetime import datetime, timedelta
+    # import threading
+    # import time
+    # from zoneinfo import ZoneInfo
 
-    
+    # def run_screener_1():
+    #     # Convert current CT time to ET for market hours
+    #     ct_time = datetime.now(ZoneInfo("America/Chicago"))
+    #     et_time = ct_time.astimezone(ZoneInfo("America/New_York"))
+        
+    #     # Calculate time until 10 mins before market close (3:50 PM ET)
+    #     market_close_time = et_time.replace(hour=15, minute=50, second=0, microsecond=0)
+        
+    #     # If current time is past today's market close, schedule for next business day
+    #     if et_time >= market_close_time:
+    #         market_close_time += timedelta(days=1)
+    #         # Skip weekends
+    #         while market_close_time.weekday() > 4:  # 5 = Saturday, 6 = Sunday
+    #             market_close_time += timedelta(days=1)
+        
+    #     # Calculate sleep duration
+    #     sleep_duration = (market_close_time - et_time).total_seconds()
+    #     if sleep_duration > 0:
+    #         print(f"Screener 1 will run at {market_close_time.astimezone(ZoneInfo('America/Chicago')).strftime('%I:%M %p CT')}")
+    #         time.sleep(sleep_duration)
+    #         screener_1()
+
+    # def handle_user_input():
+    #     while True:
+    #         command = input("\nEnter command (options/quote/earnings/exit):\n").lower().strip()
+            
+    #         if command == "exit":
+    #             break
+    #         elif command == "options":
+    #             ticker = input("Enter ticker symbol: ")
+    #             get_options(ticker)
+    #         elif command == "quote":
+    #             ticker = input("Enter ticker symbol: ")
+    #             get_stock_quote(ticker)
+    #         elif command == "earnings":
+    #             screener_2()
+    #         else:
+    #             print("Invalid command. Available commands: options, quote, earnings, exit")
+
+    # # Start screener_1 in a separate thread
+    # screener_thread = threading.Thread(target=run_screener_1)
+    # screener_thread.daemon = True  # Thread will exit when main program exits
+    # screener_thread.start()
+
+    # # Start user input handler in main thread
+    # print("Starting command interface. Type 'exit' to quit.")
+    # handle_user_input()
+
+
 main()
 
 
