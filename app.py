@@ -8,6 +8,21 @@ import time
 from tqdm import tqdm
 import yfinance as yf
 from tabulate import tabulate
+import threading
+from zoneinfo import ZoneInfo
+import pytz
+
+
+
+
+def system_print(message):
+    """Custom function to print system messages clearly separated from user input."""
+    print(f"[INFO] {message}")
+
+def print_clickable_link(text, url):
+    """Prints a clickable hyperlink in the terminal."""
+    escape_sequence = f"\033]8;;{url}\033\\{text}\033]8;;\033\\"
+    print(escape_sequence)
 
 
 def get_T500():
@@ -61,7 +76,7 @@ def upcoming_earnings(tickers):
     counter = 0
     
     for ticker in tqdm(tickers, desc="Processing Stocks"):
-        response = client.earnings_calendar(_from=current_date, to='2025-10-12', symbol=ticker, international=False)
+        response = client.earnings_calendar(_from=current_date, to=end_date, symbol=ticker, international=False)
         if "earningsCalendar" in response and response["earningsCalendar"]:
             earnings_in_5days.append(ticker)
         time.sleep(1.1)
@@ -136,85 +151,84 @@ def get_news(ticker_list):
     counter = 1
     for ticker in ticker_list:
         news = yf.Ticker(ticker).news
+        print("\n" * 2)
         print(f"News for {ticker}:")
         for article in news:
-            # Check if 'content' and 'title' keys exist in the article
-            if 'content' in article and 'title' in article['content']:
-                print(f"{counter}. {article['content']['title']}")
-            else:
-                print("Skipping article due to missing 'title'")
+            try:
+                # Check if 'content' and 'title' keys exist in the article
+                if 'content' in article and 'title' in article['content']:
+                    print_clickable_link(f"{counter}. {article['content']['title']}", article['content']['clickThroughUrl']['url'])
+                else:
+                    print("Skipping article due to missing 'title'")
+            except TypeError as e:
+                pass
             counter += 1
 
 def screener_1():
     stocks = get_T500()
-    get_stocks_biggest_losers(stocks)
-    get_news(stocks)
+    biggest_losers = get_stocks_biggest_losers(stocks)
+    get_news(biggest_losers)
 
 def screener_2():
     stocks = get_T500()
     upcoming_earnings(stocks)
 
-# Main
+def run_screener():
+    cst = pytz.timezone("US/Central")
+    while True:
+        local_time = datetime.now(cst)
+        try:
+            if local_time.hour == 14 and local_time.minute == 0:
+                screener_1()
+            else:
+            # Calculate the time until 14:00 CST today
+                target_time = datetime(local_time.year, local_time.month, local_time.day, 14, 0, 0, tzinfo=cst)
+            if local_time >= target_time:
+                # If it's already past 14:00, calculate for the next day
+                target_time += timedelta(days=1)
+
+                # Calculate the time difference in seconds
+                time_difference = (target_time - local_time).total_seconds()
+                system_print(f"Not 14:00 CST, sleeping for {time_difference:.2f} seconds until 14:00 CST.")
+                
+                # Sleep for the calculated time
+                time.sleep(time_difference)
+        except Exception as e:
+            system_print(f"An error occurred: {e}")
 
 def main():
+    # Start the screener in a separate thread
+    screener_thread = threading.Thread(target=run_screener)
+    screener_thread.daemon = True  # Allows the program to exit even if the thread is running
+    screener_thread.start()
+    time.sleep(1)
 
-    sample_list = ['TSLA', 'AAPL', 'MSFT', 'GOOGL', 'AMZN', 'NVDA', 'TSLA', 'META', 'NFLX', 'DIS', 'PEP']
-    # upcoming_earnings(stcoks)
-    # get_stock_quote('AAPL')
-    # get_options('AAPL')
-    # from datetime import datetime, timedelta
-    # import threading
-    # import time
-    # from zoneinfo import ZoneInfo
-
-    # def run_screener_1():
-    #     # Convert current CT time to ET for market hours
-    #     ct_time = datetime.now(ZoneInfo("America/Chicago"))
-    #     et_time = ct_time.astimezone(ZoneInfo("America/New_York"))
-        
-    #     # Calculate time until 10 mins before market close (3:50 PM ET)
-    #     market_close_time = et_time.replace(hour=15, minute=50, second=0, microsecond=0)
-        
-    #     # If current time is past today's market close, schedule for next business day
-    #     if et_time >= market_close_time:
-    #         market_close_time += timedelta(days=1)
-    #         # Skip weekends
-    #         while market_close_time.weekday() > 4:  # 5 = Saturday, 6 = Sunday
-    #             market_close_time += timedelta(days=1)
-        
-    #     # Calculate sleep duration
-    #     sleep_duration = (market_close_time - et_time).total_seconds()
-    #     if sleep_duration > 0:
-    #         print(f"Screener 1 will run at {market_close_time.astimezone(ZoneInfo('America/Chicago')).strftime('%I:%M %p CT')}")
-    #         time.sleep(sleep_duration)
-    #         screener_1()
-
-    # def handle_user_input():
-    #     while True:
-    #         command = input("\nEnter command (options/quote/earnings/exit):\n").lower().strip()
-            
-    #         if command == "exit":
-    #             break
-    #         elif command == "options":
-    #             ticker = input("Enter ticker symbol: ")
-    #             get_options(ticker)
-    #         elif command == "quote":
-    #             ticker = input("Enter ticker symbol: ")
-    #             get_stock_quote(ticker)
-    #         elif command == "earnings":
-    #             screener_2()
-    #         else:
-    #             print("Invalid command. Available commands: options, quote, earnings, exit")
-
-    # # Start screener_1 in a separate thread
-    # screener_thread = threading.Thread(target=run_screener_1)
-    # screener_thread.daemon = True  # Thread will exit when main program exits
-    # screener_thread.start()
-
-    # # Start user input handler in main thread
-    # print("Starting command interface. Type 'exit' to quit.")
-    # handle_user_input()
-
+    # Allow user to run functions at runtime
+    while True:
+        user_input = input(">>")
+        if user_input.startswith("get_stock_quote"):
+            _, ticker = user_input.split()
+            get_stock_quote(ticker)
+        elif user_input.startswith("--help"):
+            print("get_stock_quote <ticker>")
+            print("get_options <ticker>")
+            print("upcoming_earnings <list of ticker(s)>")
+            print("screener 1 <default S&P 500>")
+            print("screener 2 <default S&P 500>")
+        elif user_input.startswith("get_options"):
+            _, ticker = user_input.split()
+            get_options(ticker)
+        elif user_input.startswith("upcoming_earnings"):
+            upcoming_earnings(get_T500())
+        elif user_input.lower() == "exit" or user_input.lower() == "quit":
+            print("Exiting program.")
+            break
+        elif user_input.lower() == "screener 1":
+            screener_1()
+        elif user_input.lower() == "screener 2":
+            screener_2()
+        else:
+            print("Unknown command. try --help for command list.")
 
 main()
 
