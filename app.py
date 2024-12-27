@@ -14,7 +14,6 @@ import pytz
 
 
 
-
 def system_print(message):
     """Custom function to print system messages clearly separated from user input."""
     print(f"[INFO] {message}")
@@ -169,6 +168,8 @@ def screener_1():
     biggest_losers = get_stocks_biggest_losers(stocks)
     get_news(biggest_losers)
 
+    tradeIdea = tradeIdea()
+
 def screener_2():
     stocks = get_T500()
     upcoming_earnings(stocks)
@@ -197,38 +198,53 @@ def run_screener():
             system_print(f"An error occurred: {e}")
 
 def main():
-    # Start the screener in a separate thread
-    screener_thread = threading.Thread(target=run_screener)
-    screener_thread.daemon = True  # Allows the program to exit even if the thread is running
-    screener_thread.start()
-    time.sleep(1)
+    # wrap in try catch block to except network errors
+    try:
+        # Start the screener in a separate thread
+        screener_thread = threading.Thread(target=run_screener)
+        screener_thread.daemon = True  # Allows the program to exit even if the thread is running
+        screener_thread.start()
+        time.sleep(1)
 
-    # Allow user to run functions at runtime
-    while True:
-        user_input = input(">>")
-        if user_input.startswith("get_stock_quote"):
-            _, ticker = user_input.split()
-            get_stock_quote(ticker)
-        elif user_input.startswith("--help"):
-            print("get_stock_quote <ticker>")
-            print("get_options <ticker>")
-            print("upcoming_earnings <list of ticker(s)>")
-            print("screener 1 <default S&P 500>")
-            print("screener 2 <default S&P 500>")
-        elif user_input.startswith("get_options"):
-            _, ticker = user_input.split()
-            get_options(ticker)
-        elif user_input.startswith("upcoming_earnings"):
-            upcoming_earnings(get_T500())
-        elif user_input.lower() == "exit" or user_input.lower() == "quit":
-            print("Exiting program.")
-            break
-        elif user_input.lower() == "screener 1":
-            screener_1()
-        elif user_input.lower() == "screener 2":
-            screener_2()
-        else:
-            print("Unknown command. try --help for command list.")
+        # Allow user to run functions at runtime
+        while True:
+            user_input = input(">>")
+            if user_input.startswith("get_stock_quote"):
+                _, ticker = user_input.split()
+                get_stock_quote(ticker)
+            elif user_input.startswith("--help"):
+                print("get_stock_quote <ticker>")
+                print("get_options <ticker>")
+                print("upcoming_earnings <list of ticker(s)>")
+                print("screener 1 <default S&P 500>")
+                print("screener 2 <default S&P 500>")
+            elif user_input.startswith("get_options"):
+                _, ticker = user_input.split()
+                get_options(ticker)
+            elif user_input.startswith("upcoming_earnings"):
+                upcoming_earnings(get_T500())
+            elif user_input.lower() == "exit" or user_input.lower() == "quit":
+                print("Exiting program.")
+                break
+            elif user_input.lower() == "clear":
+                os.system('clear')
+            elif user_input.lower() == "screener 1":
+                screener_1()
+            elif user_input.lower() == "screener 2":
+                screener_2()
+            else:
+                print("Unknown command. try --help for command list.")
+                
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        print("Please check your internet connection and try again.")
+        print("Retrying in 10 seconds...")
+        time.sleep(10)
+        main() 
+        
+        
+
+
 
 main()
 
