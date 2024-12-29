@@ -15,6 +15,15 @@ This project is a stock market screener application that provides various functi
 - **News Retrieval**: Fetch the latest news articles for a list of stock tickers.
 
 
+## Types of Screener (presets)
+- **Screener 1**: 
+Biggest Losers (with news): Get the top 10 stocks with the largest percentage decrease in price. 
+
+
+## Endgoal
+- User can create their own screener presets
+- User can save their own screener presets
+- User can share their own screener presets
 
 
 ## Installation
